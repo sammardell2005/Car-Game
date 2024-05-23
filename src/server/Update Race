@@ -1,0 +1,45 @@
+game.ReplicatedStorage["Race Information"].Ended.Changed:Connect(function()
+	wait(0.1)
+	if game.ReplicatedStorage["Race Information"].Ended.Value == false then -- If the race is still happening
+		local FirstPlace = nil
+		local LastPlace = nil
+		game.ReplicatedStorage["Remote Events"]["Update Camera"]:FireAllClients()
+		while game.ReplicatedStorage["Race Information"].Ended.Value == false do
+			wait(0.1)
+			local CurrentMap = game.ReplicatedStorage["Race Information"]["Current Map"].Value
+			local CurrentCheckPoint = game.ReplicatedStorage["Race Information"]["Current CheckPoint"].Value
+			local CurrentCameraPoint = game.ReplicatedStorage["Race Information"]["Current CameraPoint"].Value
+			for i, v in pairs(game.Players:GetChildren()) do
+				local Car = workspace:FindFirstChild(v.Name)
+				local HitBox = Car.HitBox
+				if CurrentMap:FindFirstChild("CheckPoint"..CurrentCheckPoint) then -- need to add a check if the player is still in the race or not
+					local CheckPointDistance = (CurrentMap:FindFirstChild("CheckPoint"..CurrentCheckPoint).Position - HitBox.Position).Magnitude
+					if FirstPlace == nil then
+						FirstPlace = HitBox
+					elseif CheckPointDistance < (CurrentMap:FindFirstChild("CheckPoint"..CurrentCheckPoint).Position - FirstPlace.Position).Magnitude then
+						FirstPlace = HitBox
+					end
+					if LastPlace == nil then
+						LastPlace = HitBox
+					elseif CheckPointDistance > (CurrentMap:FindFirstChild("CheckPoint"..CurrentCheckPoint).Position - LastPlace.Position).Magnitude then
+						LastPlace = HitBox
+					end
+				else
+					print("CheckPoint Not Found. From DistanceChecker Script")
+				end
+			end
+			
+			
+			-- Camera cant follow behind players
+			
+			-- Move Race Camera Part According to the First Place player
+			-- Update Camera using FirstPlace and LastPlace
+		end
+	end
+end)
+
+-- Use Current Checkpoint to see who is in first then Use Current Checkpoint to see who is in last
+-- Set the camera somewhere between the First and Last Player depending on the current CameraPoint
+-- If Last is too far away from First then make them out
+
+-- Could add their speed every second to their Distance Traveled to keep track of how far they have traveled

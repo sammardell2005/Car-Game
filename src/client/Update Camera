@@ -1,0 +1,56 @@
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+local Camera = workspace.CurrentCamera
+
+local FirstPlace = nil
+local LastPlace = nil
+local Focus = nil
+
+game.ReplicatedStorage["Remote Events"]["Update Camera"].OnClientEvent:Connect(function() -- Make this run every frame instead only while Ended is false
+	Camera.CameraType = Enum.CameraType.Scriptable
+	local Ended = game.ReplicatedStorage["Race Information"].Ended
+	while Ended.Value == false do
+		local CurrentMap = game.ReplicatedStorage["Race Information"]["Current Map"].Value
+		local CurrentCheckPoint = game.ReplicatedStorage["Race Information"]["Current CheckPoint"].Value
+		for i, v in pairs(game.Players:GetChildren()) do
+			local Car = workspace:FindFirstChild(v.Name)
+			local HitBox = Car.HitBox
+			if CurrentMap:FindFirstChild("CheckPoint"..CurrentCheckPoint) then -- need to add a check if the player is still in the race or not
+				local CheckPointDistance = (CurrentMap:FindFirstChild("CheckPoint"..CurrentCheckPoint).Position - HitBox.Position).Magnitude
+				if FirstPlace == nil then
+					FirstPlace = HitBox
+				elseif CheckPointDistance < (CurrentMap:FindFirstChild("CheckPoint"..CurrentCheckPoint).Position - FirstPlace.Position).Magnitude then
+					FirstPlace = HitBox
+				end
+				if LastPlace == nil then
+					LastPlace = HitBox
+				elseif CheckPointDistance > (CurrentMap:FindFirstChild("CheckPoint"..CurrentCheckPoint).Position - LastPlace.Position).Magnitude then
+					LastPlace = HitBox
+				end
+
+				if FirstPlace ~= nil then
+					Focus = (FirstPlace.Position + LastPlace.Position)/2
+					if FirstPlace == LastPlace then
+						Focus = FirstPlace.Position
+					end
+				end
+			else
+				print("CheckPoint Not Found. From DistanceChecker Script")
+			end
+		end
+		local DistanceToCheckPoint = (CurrentMap:FindFirstChild("CheckPoint"..CurrentCheckPoint).Position - FirstPlace.Position).Magnitude
+		local DistanceBetweenCheckPoints = (CurrentMap:FindFirstChild("CheckPoint"..CurrentCheckPoint).Position - CurrentMap:FindFirstChild("CheckPoint"..CurrentCheckPoint-1).Position).Magnitude
+		local CameraAngle = game.ReplicatedStorage["Race Information"]["Old CameraAngle"].Value
+		local PIT = 1-DistanceToCheckPoint/DistanceBetweenCheckPoints
+		--if game.ReplicatedStorage["Race Information"]["Change Camera Angle"].Value == true then
+			CameraAngle = CameraAngle:Lerp(game.ReplicatedStorage["Race Information"]["Current CameraAngle"].Value,PIT) -- Goal, Point in time
+		--end
+		if Focus ~= nil then
+			local NewCFrameTween = TweenService:Create(Camera, TweenInfo.new(0.25,Enum.EasingStyle.Linear),{CFrame = CFrame.lookAt(Focus+CameraAngle, Focus)}):Play()
+			--Camera.CFrame = CFrame.lookAt(Focus+CameraAngle, Focus)
+		end
+		game:GetService("RunService").RenderStepped:wait()
+	end
+	
+	-- Set camera back to normal
+end)

@@ -1,0 +1,36 @@
+-- Set Current Checkpoint to 1
+-- Set Ended to false
+local HttpService = game:GetService("HttpService")
+
+game.ReplicatedStorage["Remote Events"]["Start Race"].OnServerEvent:Connect(function()
+	local Map = workspace["Pool Table"]
+	
+	local InRace = game.ReplicatedStorage["Race Information"]["In Race"]
+	InRace.Value = ""
+	local Count = 0
+	for i, v in pairs(game.Players:GetChildren()) do
+		local Player = v
+		local NewCar = game.ReplicatedStorage.Models:FindFirstChild("Car"):Clone() -- Change this eventually to the car the player has selected
+		NewCar.Name = Player.Name
+		NewCar.Parent = workspace
+	--	NewCar.HitBox.Anchored = true
+		NewCar:PivotTo(Map.StartingPoint.CFrame * CFrame.new(Vector3.new((-Map.StartingPoint.Size.X/2)+(NewCar.HitBox.Size.X/2)+(NewCar.HitBox.Size.X*Count),0,0)))
+		for i, v in pairs(NewCar:GetDescendants()) do
+			if v:IsA("BasePart") then
+				v:SetNetworkOwner(Player)
+			end
+		end
+		Player.Character = NewCar
+		wait(0.1)
+		Player.Information.Car.Value = NewCar
+		if InRace.Value == "" then
+			InRace.Value = HttpService:JSONEncode({v.Name})
+		else
+			InRace.Value = HttpService:JSONEncode({HttpService:JSONDecode(InRace.Value), v.Name})
+		end
+		Count += 1
+	end
+	game.ReplicatedStorage["Race Information"]["Current Map"].Value = Map -- What ever this map is
+	game.ReplicatedStorage["Race Information"]["Current CheckPoint"].Value = 2
+	game.ReplicatedStorage["Race Information"].Ended.Value = false
+end)
